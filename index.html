@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocalStorage Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+        }
+
+        .clear-btn {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+        }
+
+        .clear-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(244, 67, 54, 0.3);
+        }
+
+        .add-btn {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            color: white;
+        }
+
+        .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(33, 150, 243, 0.3);
+        }
+
+        .storage-list {
+            list-style: none;
+        }
+
+        .storage-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .storage-item:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .storage-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+
+        .item-key {
+            font-weight: 700;
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+
+        .item-value {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+            word-break: break-word;
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #ff4757;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: #ff3742;
+            transform: scale(1.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .count-badge {
+            display: inline-block;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-left: 15px;
+        }
+
+        .add-form {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .add-form.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LocalStorage Viewer <span class="count-badge" id="itemCount">0 items</span></h1>
+        
+        <div class="controls">
+            <button class="refresh-btn" onclick="refreshList()">🔄 Refresh</button>
+            <button class="clear-btn" onclick="clearAll()">🗑️ Clear All</button>
+            <button class="add-btn" onclick="toggleAddForm()">➕ Add Item</button>
+        </div>
+
+        <div class="add-form" id="addForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="keyInput">Key:</label>
+                    <input type="text" id="keyInput" placeholder="Enter key name">
+                </div>
+                <div class="form-group">
+                    <label for="valueInput">Value:</label>
+                    <textarea id="valueInput" placeholder="Enter value"></textarea>
+                </div>
+            </div>
+            <button class="add-btn" onclick="addItem()">Save Item</button>
+        </div>
+
+        <ul class="storage-list" id="storageList"></ul>
+    </div>
+
+    <script>
+        function refreshList() {
+            const list = document.getElementById('storageList');
+            const itemCount = document.getElementById('itemCount');
+            
+            // Clear existing list
+            list.innerHTML = '';
+            
+            // Check if localStorage has items
+            if (localStorage.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No items in LocalStorage</h3>
+                        <p>Add some items to see them here!</p>
+                    </div>
+                `;
+                itemCount.textContent = '0 items';
+                return;
+            }
+
+            // Create list items for each localStorage entry
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                
+                const listItem = document.createElement('li');
+                listItem.className = 'storage-item';
+                listItem.innerHTML = `
+                    <button class="delete-btn" onclick="deleteItem('${key.replace(/'/g, '\\\'')}')" title="Delete item">×</button>
+                    <div class="item-key">${escapeHtml(key)}</div>
+                    <div class="item-value">${escapeHtml(value)}</div>
+                `;
+                
+                list.appendChild(listItem);
+            }
+
+            // Update count
+            itemCount.textContent = `${localStorage.length} item${localStorage.length !== 1 ? 's' : ''}`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function clearAll() {
+            if (confirm('Are you sure you want to clear all localStorage items?')) {
+                localStorage.clear();
+                refreshList();
+            }
+        }
+
+        function deleteItem(key) {
+            if (confirm(`Are you sure you want to delete "${key}"?`)) {
+                localStorage.removeItem(key);
+                refreshList();
+            }
+        }
+
+        function toggleAddForm() {
+            const form = document.getElementById('addForm');
+            form.classList.toggle('active');
+            
+            if (form.classList.contains('active')) {
+                document.getElementById('keyInput').focus();
+            }
+        }
+
+        function addItem() {
+            const key = document.getElementById('keyInput').value.trim();
+            const value = document.getElementById('valueInput').value;
+            
+            if (!key) {
+                alert('Please enter a key name');
+                return;
+            }
+            
+            localStorage.setItem(key, value);
+            
+            // Clear form
+            document.getElementById('keyInput').value = '';
+            document.getElementById('valueInput').value = '';
+            
+            // Hide form and refresh list
+            document.getElementById('addForm').classList.remove('active');
+            refreshList();
+        }
+
+        // Handle Enter key in form inputs
+        document.getElementById('keyInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('valueInput').focus();
+            }
+        });
+
+        document.getElementById('valueInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                addItem();
+            }
+        });
+
+        // Initial load
+        refreshList();
+
+        // Auto-refresh every 5 seconds to catch external changes
+        setInterval(refreshList, 5000);
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
+
